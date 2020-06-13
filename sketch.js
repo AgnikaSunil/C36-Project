@@ -63,6 +63,9 @@ var colorPicker1;
         y:mouseY
       }
       pen.push(mouseLocation);
+      var Ref= database.ref("/").update({
+        storedScribble :scribble
+      });  
     }
     
     for(var i=0; i<scribble.length;i++){
