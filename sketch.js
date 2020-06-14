@@ -1,33 +1,37 @@
 let scribble=[];	
 let pen=[];
+let storedScribble;
 var r,g,b;
 var canvas;
 var colorPicker1;
+var Ref;
+function setup(){
+  database = firebase.database();
 
-	function setup() {
-    database = firebase.database();
+  r = random(255);
+  g = random(255);
+  b = random(255);
 
-    r = random(255);
-    g = random(255);
-    b = random(255);
+  canvas = createCanvas(1422, 690);
+  canvas.mousePressed(startScribbling);
+  canvas.mouseReleased(stopScribbling);
 
-    canvas = createCanvas(1422, 690);
-    canvas.mousePressed(startScribbling);
-    canvas.mouseReleased(stopScribbling);
+  colorPicker1 = createColorPicker('#FF0000');
+  colorPicker1.position(5,590);
+  colorPicker1.size(100,36);
 
-    colorPicker1 = createColorPicker('#FF0000');
-    colorPicker1.position(5,590);
-    colorPicker1.size(100,36);
+  saveBtn = createButton('Save');
+  saveBtn.position(110,640);
+  saveBtn.size(100,51);
+  saveBtn.style('background-color', color("#CCCCFF"));
+  saveBtn.mousePressed(saveScribble);
 
-    save = createButton('Save');
-    save.position(110,640);
-    save.size(100,51);
-    save.style('background-color', color("#CCCCFF"));
-    save.mousePressed(saveScribble);
-	}
-	
-	function draw() {
-    whiteBg();
+  Ref = database.ref("canvas/touch");
+  
+}
+
+function draw(){
+  whiteBg();
     blackBg();
     bgChange(); 
     background(r,g,b);
@@ -63,9 +67,6 @@ var colorPicker1;
         y:mouseY
       }
       pen.push(mouseLocation);
-      var Ref= database.ref("/").update({
-        storedScribble :scribble
-      });  
     }
     
     for(var i=0; i<scribble.length;i++){
@@ -76,57 +77,75 @@ var colorPicker1;
       }
       endShape();
     }
-  }
-  
-	function startScribbling(){	
-    pen=[];
-    scribble.push(pen);
-	}
+ 
+  Ref.on("value",readVal); 
+ 
+  drawSprites();
+}
 
-  function bgChange(){
-    bgButton = createButton("Change Background Color");
-    bgButton.mousePressed(function(){
-      r = random(255);
-      g = random(255);
-      b = random(255);
-    });
-    bgButton.position(3, 640);
-    bgButton.size(100);
-    bgButton.style('background-color', color("#CCCCFF"));
+function bgChange(){
+  bgButton = createButton("Change Background Color");
+  bgButton.mousePressed(function(){
+    r = random(255);
+    g = random(255);
+    b = random(255);
+  });
+  bgButton.position(3, 640);
+  bgButton.size(100);
+  bgButton.style('background-color', color("#CCCCFF"));
+}
+
+function whiteBg(){
+  whiteBgBtn = createButton("");
+  whiteBgBtn.mousePressed(function(){
+    r = 255;
+    g = 255;
+    b = 255;
+  })
+  whiteBgBtn.position(1135,610);
+  whiteBgBtn.size(140,80);
+  whiteBgBtn.style('background-color', color(255));
+}
+
+function blackBg(){
+  blackBgBtn = createButton("");
+  blackBgBtn.mousePressed(function(){
+    r = 0;
+    g = 0;
+    b = 0;
+  })
+  blackBgBtn.position(1280,610);
+  blackBgBtn.size(140,80);
+  blackBgBtn.style('background-color', color(0));
+}
+
+function stopScribbling(){
+  pen =[];
+}
+
+function saveScribble(){
+  var scribbleRef = database.ref('savedScribble');
+  var info = {
+  YourDrawing :scribble
+  }
+  scribbleRef.push(info);
+}
+
+function startScribbling() {
+  pen=[];
+  scribble.push(pen);
+  database.ref("canvas/touch").set(scribble);
   }
 
-  function whiteBg(){
-    whiteBgBtn = createButton("");
-    whiteBgBtn.mousePressed(function(){
-      r = 255;
-      g = 255;
-      b = 255;
-    })
-    whiteBgBtn.position(1135,610);
-    whiteBgBtn.size(140,80);
-    whiteBgBtn.style('background-color', color(255));
-  }
-
-  function blackBg(){
-    blackBgBtn = createButton("");
-    blackBgBtn.mousePressed(function(){
-      r = 0;
-      g = 0;
-      b = 0;
-    })
-    blackBgBtn.position(1280,610);
-    blackBgBtn.size(140,80);
-    blackBgBtn.style('background-color', color(0));
-  }
-
-  function stopScribbling(){
-    pen =[];
-  }
-
-  function saveScribble(){
-    var scribbleRef = database.ref('scribble');
-    var info = {
-    YourDrawing :scribble
-    }
-    scribbleRef.push(info);
-  }
+function readVal(data) {
+  storedScribble = data.val();
+  for (var i = 0; i < storedScribble.length; i++) {
+   var storedPath = storedScribble[i];
+ 
+   beginShape();
+   for (var p = 0; p < storedPath.length; p++) {
+     vertex(storedPath[p].x,storedPath[p].y) ;   
+   }
+   endShape(); 
+ } 
+}
